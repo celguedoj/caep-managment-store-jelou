@@ -1,0 +1,31 @@
+# compiled output
+/build
+/dist
+/tmp
+
+# dependencies
+node_modules/
+
+# editors
+/.idea
+/.vscode
+.project
+.classpath
+.settings/
+*.launch
+
+# misc
+/.sass-cache
+/.scannerwork
+/connect.lock
+/coverage
+npm-debug.log
+yarn-error.log
+
+# system
+.DS_Store
+Thumbs.db
+
+# dotenv
+.env
+.docker
