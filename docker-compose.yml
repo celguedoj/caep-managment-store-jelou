@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   mysql:
     image: mysql:8.0
@@ -26,6 +24,18 @@ services:
       - "3001:3001"
     env_file:
       - ./customers-api/.env
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  orders-api:
+    build: ./orders-api
+    container_name: orders-api
+    restart: always
+    ports:
+      - "3002:3002"
+    env_file:
+      - ./orders-api/.env
     depends_on:
       mysql:
         condition: service_healthy

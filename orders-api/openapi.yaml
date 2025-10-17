@@ -1,0 +1,321 @@
+openapi: 3.0.3
+info:
+  title: Orders API
+  version: 1.0.0
+  description: |
+    API RESTful para gestionar productos y órdenes de clientes.  
+    Implementa idempotencia en la confirmación de órdenes mediante el header `X-Idempotency-Key`.
+servers:
+  - url: http://localhost:3002
+    description: Local development server
+
+tags:
+  - name: Products
+    description: Operaciones sobre productos
+  - name: Orders
+    description: Operaciones sobre órdenes
+
+paths:
+  /health:
+    get:
+      summary: Healthcheck del servicio
+      tags: [System]
+      responses:
+        "200":
+          description: Servicio operativo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
+
+  /products:
+    post:
+      summary: Crear un nuevo producto
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sku, name, price_cents, stock]
+              properties:
+                sku:
+                  type: string
+                  example: P001
+                name:
+                  type: string
+                  example: Camisa Polo Azul
+                price_cents:
+                  type: integer
+                  example: 85000
+                stock:
+                  type: integer
+                  example: 25
+      responses:
+        "201":
+          description: Producto creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  /products/{id}:
+    get:
+      summary: Obtener un producto por ID
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Producto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Producto no encontrado
+    patch:
+      summary: Actualizar un producto existente
+      tags: [Products]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Camisa Polo Azul Premium
+                price_cents:
+                  type: integer
+                  example: 90000
+                stock:
+                  type: integer
+                  example: 30
+      responses:
+        "200":
+          description: Producto actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  /orders:
+    get:
+      summary: Listar órdenes
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [CREATED, CONFIRMED, CANCELED]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            example: 10
+      responses:
+        "200":
+          description: Lista de órdenes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+    post:
+      summary: Crear una nueva orden
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [customer_id, items]
+              properties:
+                customer_id:
+                  type: integer
+                  example: 1
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [product_id, qty]
+                    properties:
+                      product_id:
+                        type: integer
+                        example: 1
+                      qty:
+                        type: integer
+                        example: 2
+      responses:
+        "201":
+          description: Orden creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}:
+    get:
+      summary: Obtener una orden por ID
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Orden encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Orden no encontrada
+
+  /orders/{id}/confirm:
+    post:
+      summary: Confirmar una orden (idempotente)
+      description: |
+        Confirma una orden y guarda el resultado en la tabla `idempotency_keys`.  
+        Si se repite la misma key, devuelve el mismo resultado previo sin reprocesar la orden.
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: X-Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Clave única para identificar una operación idempotente
+      responses:
+        "200":
+          description: Orden confirmada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Falta header de idempotencia
+        "409":
+          description: Key usada en otra orden
+
+  /orders/{id}/cancel:
+    post:
+      summary: Cancelar una orden
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Orden cancelada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Orden no encontrada
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        sku:
+          type: string
+        name:
+          type: string
+        price_cents:
+          type: integer
+        stock:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    OrderItem:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        qty:
+          type: integer
+        unit_price_cents:
+          type: integer
+        subtotal_cents:
+          type: integer
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        customer_id:
+          type: integer
+        status:
+          type: string
+          enum: [CREATED, CONFIRMED, CANCELED]
+        total_cents:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
