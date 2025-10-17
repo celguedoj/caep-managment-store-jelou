@@ -86,6 +86,15 @@ Ejemplo de header:
 Authorization: Bearer token
 ```
 
+### En el correo compartí un token de duración de 7 dias. (vence 25/10/2025)
+
+Si quieres generar un token puedes ejecutar los dos siguientes comandos desde la consola de nodeJS:
+
+```
+> const { default: jwt } = await import("jsonwebtoken");
+> console.log(jwt.sign({ sub: 'admin' }, 'secret_value', { expiresIn: '7d' }));
+```
+
 ---
 
 ## 🧪 Ejemplos de Requests
