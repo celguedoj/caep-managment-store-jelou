@@ -1,0 +1,24 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda Orchestrator for Create-and-Confirm Order
+
+Resources:
+  OrchestratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: orchestrator-create-and-confirm-order
+      Handler: handler.handler
+      Runtime: nodejs20.x
+      MemorySize: 256
+      Timeout: 15
+      Environment:
+        Variables:
+          CUSTOMERS_API_URL: https://api.example.com/customers
+          ORDERS_API_URL: https://api.example.com/orders
+          SERVICE_JWT_TOKEN: your-service-token
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /orchestrator/create-and-confirm-order
+            Method: post

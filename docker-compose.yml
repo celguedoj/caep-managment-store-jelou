@@ -39,3 +39,20 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+
+  lambda-orchestrator:
+    build:
+      context: ./lambda-orchestrator
+    container_name: lambda-orchestrator
+    ports:
+      - "3003:3003"
+    environment:
+      CUSTOMERS_API_URL: http://customers-api:3001
+      ORDERS_API_URL: http://orders-api:3002
+      SERVICE_JWT_TOKEN: your-test-jwt
+      PORT: 3003
+    depends_on:
+      - customers-api
+      - orders-api
+    networks:
+      - default

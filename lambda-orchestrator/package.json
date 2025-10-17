@@ -1,0 +1,16 @@
+{
+  "name": "lambda-orchestrator",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node handler.js"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}
